@@ -1,7 +1,7 @@
 # IAM Role for RDS Enhanced Monitoring
-resource "aws_iam_role" "test-IAM-Role-RDS" {
+resource "aws_iam_role" "work-IAM-Role-RDS" {
 
-  name = "test-IAM-Role-RDS"
+  name = "work-IAM-Role-RDS"
   assume_role_policy = jsonencode({
          Version = "2012-10-17"
           Statement = [
@@ -19,6 +19,6 @@ resource "aws_iam_role" "test-IAM-Role-RDS" {
   managed_policy_arns = ["arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"]
 
   tags = {
-    Name = "test-IAM-Role-RDS"
+    Name = "work-IAM-Role-RDS"
   }
 }
