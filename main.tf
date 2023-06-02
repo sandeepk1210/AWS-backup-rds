@@ -20,7 +20,8 @@ resource "aws_db_instance" "prod" {
   # final_snapshot_identifier = "ci-aurora-cluster-backup"
 
   // Networking and Security 
-  publicly_accessible = true
+  publicly_accessible    = true
+  vpc_security_group_ids = [aws_security_group.allow_rds.id]
 
   // Monitoring and Performance Insight
   performance_insights_enabled          = true
