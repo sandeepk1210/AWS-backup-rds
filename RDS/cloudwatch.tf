@@ -1,5 +1,5 @@
 resource "aws_cloudwatch_metric_alarm" "cpu-high" {
-  alarm_name = "${aws_db_instance.prod.identifier}-ecs-cluster-cpu-utilization-high"
+  alarm_name = "${aws_db_instance.this.identifier}-ecs-cluster-cpu-utilization-high"
   #alarm_name = "work-challenge-cluster-cpu-utilization-high"
   alarm_description   = "Scale up if CPU utilization is above ${var.cpu_utilization_high_threshold_percent} for ${var.cpu_utilization_high_period_seconds} seconds"
   comparison_operator = "GreaterThanOrEqualToThreshold"
@@ -13,13 +13,13 @@ resource "aws_cloudwatch_metric_alarm" "cpu-high" {
   #insufficient_data_actions = []
 
   dimensions = {
-    DBInstanceIdentifier = aws_db_instance.prod.identifier
+    DBInstanceIdentifier = aws_db_instance.this.identifier
   }
 }
 
 
 resource "aws_cloudwatch_dashboard" "main" {
-  dashboard_name = "${aws_db_instance.prod.identifier}-dashboard"
+  dashboard_name = "${aws_db_instance.this.identifier}-dashboard"
 
   dashboard_body = jsonencode({
     widgets = [
@@ -30,7 +30,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         "x" : 0,
         "type" : "log",
         "properties" : {
-          "query" : "SOURCE '/aws/rds/instance/${aws_db_instance.prod.identifier}/postgresql' | filter @message like /execute/\n|parse @message ‘* * *@* duration: * *: *’ as Date,Time,session,session2,Query_time,query_type,Query\n|parse session ‘*:*:*’ as c1,Client_ip,User_name\n|parse session2 ‘*:*:*:’ as DB_name,c5,c6\n|display Date,Time,User_name,DB_name,Query_time/1000 as Query_time_sec,Query\n|sort Query_time_sec desc\n| limit 20",
+          "query" : "SOURCE '/aws/rds/instance/${aws_db_instance.this.identifier}/postgresql' | filter @message like /execute/\n|parse @message ‘* * *@* duration: * *: *’ as Date,Time,session,session2,Query_time,query_type,Query\n|parse session ‘*:*:*’ as c1,Client_ip,User_name\n|parse session2 ‘*:*:*:’ as DB_name,c5,c6\n|display Date,Time,User_name,DB_name,Query_time/1000 as Query_time_sec,Query\n|sort Query_time_sec desc\n| limit 20",
           "region" : "us-east-1",
           "stacked" : false,
           "view" : "table",
@@ -44,7 +44,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         "width" : 24,
         "height" : 6,
         "properties" : {
-          "query" : "SOURCE '/aws/rds/instance/${aws_db_instance.prod.identifier}/postgresql' | filter @message like /execute/\n| parse @message ‘* * *@* duration: * *: *’ as \nDate,Time,session,session2,Query_time,query_type,Query\n| parse session ‘*:*:*’ as c1,Client_ip,User_name\n| parse session2 ‘*:*:*:’ as DB_name,c5,c6\n| display Date,Time,User_name,DB_name,Query_time/1000 as \nQuery_time_sec,Query\n| sort Query_time_sec desc\n| limit 20",
+          "query" : "SOURCE '/aws/rds/instance/${aws_db_instance.this.identifier}/postgresql' | filter @message like /execute/\n| parse @message ‘* * *@* duration: * *: *’ as \nDate,Time,session,session2,Query_time,query_type,Query\n| parse session ‘*:*:*’ as c1,Client_ip,User_name\n| parse session2 ‘*:*:*:’ as DB_name,c5,c6\n| display Date,Time,User_name,DB_name,Query_time/1000 as \nQuery_time_sec,Query\n| sort Query_time_sec desc\n| limit 20",
           "region" : "us-east-1",
           "stacked" : false,
           "title" : "Execution Plans for Slow Queries",
@@ -58,7 +58,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         "width" : 24,
         "height" : 6,
         "properties" : {
-          "query" : "SOURCE '/aws/rds/instance/${aws_db_instance.prod.identifier}/postgresql' | filter @message like /ERROR/\n| display @message",
+          "query" : "SOURCE '/aws/rds/instance/${aws_db_instance.this.identifier}/postgresql' | filter @message like /ERROR/\n| display @message",
           "region" : "us-east-1",
           "stacked" : false,
           "view" : "table",
@@ -72,7 +72,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         "width" : 24,
         "height" : 6,
         "properties" : {
-          "query" : "SOURCE '/aws/rds/instance/${aws_db_instance.prod.identifier}/postgresql' | filter @message  like /automatic/\n| display @message",
+          "query" : "SOURCE '/aws/rds/instance/${aws_db_instance.this.identifier}/postgresql' | filter @message  like /automatic/\n| display @message",
           "region" : "us-east-1",
           "title" : "Auto-vacuum & Auto-analyze",
           "view" : "table"

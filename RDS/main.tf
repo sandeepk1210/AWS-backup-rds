@@ -1,23 +1,43 @@
-resource "aws_db_instance" "prod" {
+# Generate Random Password
+resource "random_password" "rds_password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%&*()-_=+<>?"
+}
+
+# AWS Secrets Manager Secret
+resource "aws_secretsmanager_secret" "rds_password_secret" {
+  name        = "rds-db-password"
+  description = "RDS database password stored in AWS Secrets Manager"
+  tags        = local.common_tags
+}
+
+# AWS Secrets Manager Secret Version
+resource "aws_secretsmanager_secret_version" "rds_password_secret_version" {
+  secret_id = aws_secretsmanager_secret.rds_password_secret.id
+  secret_string = jsonencode({
+    username = var.username
+    password = random_password.rds_password.result
+  })
+}
+
+resource "aws_db_instance" "this" {
   // General Configurations
   engine         = "postgres"
-  engine_version = "14.8"
-  instance_class = "db.t3.small"
-  db_name        = "workdb"
-  identifier     = "work-prod"
+  engine_version = var.engine_version
+  instance_class = var.instance_class
+  db_name        = var.db_name
+  identifier     = "app-db"
 
   //Authentication
-  username = "postgres"
-  password = "postgres"
+  username = local.db_credentials["username"]
+  password = local.db_credentials["password"]
 
   // Storage Configurations
   storage_type          = "gp3"
-  allocated_storage     = 20
-  max_allocated_storage = 100
-
-  #db_subnet_group_name = "my_database_subnet_group"
-  #parameter_group_name = "default.mysql5.6"
-  # final_snapshot_identifier = "ci-aurora-cluster-backup"
+  allocated_storage     = var.allocated_storage
+  max_allocated_storage = var.max_allocated_storage
+  storage_encrypted     = true
 
   // Networking and Security 
   publicly_accessible    = true
@@ -28,7 +48,7 @@ resource "aws_db_instance" "prod" {
   performance_insights_retention_period = 7
 
   monitoring_interval             = "60"
-  monitoring_role_arn             = aws_iam_role.work-IAM-Role-RDS.arn
+  monitoring_role_arn             = aws_iam_role.monitoring-rds-iam-role.arn
   enabled_cloudwatch_logs_exports = ["postgresql"]
 
   # Parameter Group
@@ -36,24 +56,32 @@ resource "aws_db_instance" "prod" {
   apply_immediately    = true
 
   // Backup Configuration
-  maintenance_window      = "Mon:00:00-Mon:03:00"
-  backup_window           = "03:00-06:00"
-  backup_retention_period = 5
+  // The maintenance window is the timeframe during which AWS may perform system maintenance, 
+  //  such as updates or patching for your RDS instance. 
+  //  This can result in a short downtime, so careful planning is essential.
+  // Duration: AWS uses the minimum time necessary, but you should allocate 3 hours 
+  //  to ensure sufficient time for updates (default is 30 minutes to 3 hours).
+  maintenance_window = var.maintenance_window
+  // The backup window is the timeframe during which AWS RDS creates automated backups of your database. 
+  //  While backups are usually transparent, they can impact performance due to increased I/O.
+  // Duration: AWS recommends a 30-minute to 2-hour window, depending on your database size and workload.
+  backup_window           = var.backup_window
+  backup_retention_period = var.backup_retention_period
   copy_tags_to_snapshot   = true
 
   // Other Configurations
-  auto_minor_version_upgrade = false
+  auto_minor_version_upgrade = true
   deletion_protection        = false
   skip_final_snapshot        = true
 
-  tags = {
-    Name = "work-DB"
-  }
+  tags = merge(local.common_tags, {
+    "AWSEBRBackup" = "DS14-12AM"
+  })
 }
 
 resource "aws_db_parameter_group" "db_parameter_group" {
-  name   = "workdb-postgres14"
-  family = "postgres14"
+  name   = "appdb-postgres${var.engine}"
+  family = "postgres${var.engine}"
 
   parameter {
     name  = "log_temp_files"
@@ -110,7 +138,7 @@ resource "aws_db_event_subscription" "default" {
                       db-snapshot, db-cluster or db-cluster-snapshot.
    */
   source_type = "db-instance"
-  source_ids  = [aws_db_instance.prod.identifier]
+  source_ids  = [aws_db_instance.this.identifier]
 
   event_categories = [
     "availability",
@@ -127,7 +155,7 @@ resource "aws_db_event_subscription" "default" {
 }
 
 # data "aws_db_snapshot" "lawork_prod_snapshot" {
-#   db_instance_identifier = aws_db_instance.prod.id
+#   db_instance_identifier = aws_db_instance.this.id
 #   most_recent            = true
 # }
 
@@ -140,7 +168,7 @@ resource "aws_db_event_subscription" "default" {
 #   engine_version      = "14.6"
 #   publicly_accessible = true
 #   //db_name                = "mydbdev"
-#   //snapshot_identifier = "rds-snapshot-workdb-xjuxgg14orun"
+#   //snapshot_identifier = "rds-snapshot-appdb-xjuxgg14orun"
 #   snapshot_identifier     = data.aws_db_snapshot.lawork_prod_snapshot.id
 #   maintenance_window      = "Mon:00:00-Mon:03:00"
 #   backup_window           = "03:00-06:00"
