@@ -1,6 +1,5 @@
 resource "aws_cloudwatch_metric_alarm" "cpu-high" {
   alarm_name = "${aws_db_instance.this.identifier}-ecs-cluster-cpu-utilization-high"
-  #alarm_name = "work-challenge-cluster-cpu-utilization-high"
   alarm_description   = "Scale up if CPU utilization is above ${var.cpu_utilization_high_threshold_percent} for ${var.cpu_utilization_high_period_seconds} seconds"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = 2
@@ -10,7 +9,6 @@ resource "aws_cloudwatch_metric_alarm" "cpu-high" {
   statistic           = var.cpu_utilization_high_statistic
   threshold           = var.cpu_utilization_high_threshold_percent
   alarm_actions       = [aws_sns_topic.topic.arn]
-  #insufficient_data_actions = []
 
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.this.identifier

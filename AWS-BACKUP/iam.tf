@@ -39,31 +39,3 @@ resource "aws_iam_role_policy_attachment" "EBRBackupServiceRoleForS3RestorePolic
   role       = aws_iam_role.EBRBackupServiceRole.name
   policy_arn = "arn:aws:iam::aws:policy/AWSBackupServiceRolePolicyForS3Restore"
 }
-
-# # Optional: Attach a custom backup policy if needed (Example)
-# resource "aws_iam_policy" "custom_backup_policy" {
-#   name        = "CustomBackupPolicy"
-#   description = "Custom policy for backup operations"
-#   policy = jsonencode({
-#     Version = "2012-10-17"
-#     Statement = [
-#       {
-#         Effect = "Allow"
-#         Action = [
-#           "backup:StartBackupJob",
-#           "backup:StopBackupJob",
-#           "backup:ListBackupJobs",
-#           "backup:DescribeBackupVault",
-#           "backup:CreateBackupPlan"
-#         ]
-#         Resource = "*"
-#       }
-#     ]
-#   })
-# }
-
-# # Attach the custom backup policy to the role (optional)
-# resource "aws_iam_role_policy_attachment" "EBRBackupServiceRoleCustomPolicyAttachment" {
-#   role       = aws_iam_role.EBRBackupServiceRole.name
-#   policy_arn = aws_iam_policy.custom_backup_policy.arn
-# }
